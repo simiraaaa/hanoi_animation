@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>hanoi animation</title>
+  <style>
+    html, body {
+      width: 100%;
+      height: 100%;
+      padding: 0;
+      margin: 0;
+      scrollbar-width: none;
+    }
+    #\$body {
+      --tower-width: 3%;
+      --disk-count: 64;
+      --tower-count: 3;
+      --transition-duration: 333ms;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    #\$towers {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 92%;
+    }
+    .tower {
+      position: absolute;
+      left: calc(var(--tower-num) * 100% / var(--tower-count) - var(--tower-width) / 2 + 100% / var(--tower-count) / 2);
+      width: var(--tower-width);
+      height: 100%;
+      background-color: #777;
+    }
+    .disk {
+      --move-flag: 0;
+      position: absolute;
+      height: calc(90% / var(--disk-count));
+      width: calc(5vw + 25vw / var(--disk-count) * var(--num));
+      background-color: hsl(calc(360 / var(--disk-count) * var(--num)), 60%, 50%);
+      color: white;
+      font-size: 70%;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.3);
+      box-sizing: border-box;
+      transform: translateX(-50%);
+      left: calc(var(--current-tower) * 100% / var(--tower-count) + 100% / var(--tower-count) / 2);
+      --bottom: 90% / var(--disk-count) * (var(--disk-count-in-tower) - 1 - var(--num-in-tower));
+      bottom: calc(var(--bottom) * (1 - var(--move-flag)) + var(--move-flag) * 95%);
+      transition: left var(--transition-duration) var(--transition-duration) ease, bottom var(--transition-duration) ease;
+    }
+  </style>
+</head>
+<body>
+  <div id="$body">
+    <div id="$towers">
+      <div class="tower" style="--tower-num: 0;"></div>
+      <div class="tower" style="--tower-num: 1;"></div>
+      <div class="tower" style="--tower-num: 2;"></div>
+    </div>
+    <div id="$disks"></div>
+  </div>
+  <script>
+    const app = {
+      diskCount: 64,
+      get disks() {
+        return [...$disks.children];
+      },
+      createDisk(num) {
+        return `<div class="disk" style="--num: ${num}; --current-tower: 0;">${num + 1}</div>`;  
+      },
+
+      getTowerDisks(towerNum) {
+        return app.disks.filter((disk) => app.getCurrentTower(disk) === towerNum);
+      },
+
+      updateTower(towerNum) {
+        const disks = app.getTowerDisks(towerNum);
+        disks.forEach((disk, i) => {
+          disk.style.setProperty('--num-in-tower', i);
+          disk.style.setProperty('--disk-count-in-tower', disks.length);
+        });
+      },
+
+      update() {
+        [0, 1, 2].forEach(app.updateTower);
+      },
+
+      getCurrentTower(disk) {
+        return +disk.style.getPropertyValue('--current-tower');
+      },
+
+      setCurrentTower(disk, towerNum) {
+        disk.style.setProperty('--current-tower', towerNum);
+      },
+
+      move(diskNum, towerNum) {
+        const disk = app.getDisk(diskNum);
+        // 強制的にアニメーションさせるハック
+        disk.offsetWidth;
+        return new Promise((resolve) => {
+          disk.style.setProperty('--move-flag', '1');
+          app.setCurrentTower(disk, towerNum);
+          disk.addEventListener('transitionend', function f(e) {
+            if (e.propertyName === 'left') {
+              disk.style.setProperty('--move-flag', '0');
+              disk.removeEventListener('transitionend', f);
+              disk.addEventListener('transitionend', () => {
+                resolve();
+              }, {once: true});
+              app.updateTower(towerNum);
+            }
+          });
+        });
+      },
+
+      getDisk(diskNum) {
+        return app.disks[diskNum];
+      },
+
+    };
+    $body.style.setProperty('----disk-count', app.diskCount);
+    $disks.innerHTML = [...Array(app.diskCount)].map((v, i) => {
+      return app.createDisk(i);
+    }).join('');
+    app.update();
+  </script>
+  <script>
+    function *hanoi(disk, from, work, to) {
+      if (disk < 1) return;
+      yield* hanoi(disk - 1, from, to, work);
+      yield [disk, from, to];
+      yield* hanoi(disk - 1, work, from, to);
+    }
+    (async () => {
+      for (const [disk, from, to] of hanoi(app.diskCount, 0, 1, 2)) {
+        await app.move(disk - 1, to);
+      }
+    })();
+  
+   </script>
+</body>
+</html>
