@@ -127,7 +127,7 @@
       },
 
     };
-    $body.style.setProperty('----disk-count', app.diskCount);
+    $body.style.setProperty('--disk-count', app.diskCount);
     $disks.innerHTML = [...Array(app.diskCount)].map((v, i) => {
       return app.createDisk(i);
     }).join('');
