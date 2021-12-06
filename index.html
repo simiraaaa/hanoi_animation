@@ -69,17 +69,23 @@
     <div id="$disks"></div>
   </div>
   <script>
+    
     const app = {
-      diskCount: 64,
+      diskCount: 12,
+      TOWER_COUNT: 3,
+      from: 0,
+      work: 1,
+      to: 2,
+      MAX_SEEK_NUM: 2n ** 64n - 1n,
       get disks() {
         return [...$disks.children];
       },
       createDisk(num) {
-        return `<div class="disk" style="--num: ${num}; --current-tower: 0;">${num + 1}</div>`;  
+        return `<div class="disk" style="--num: ${num}; --current-tower: ${app.from};">${num + 1}</div>`;  
       },
 
       getTowerDisks(towerNum) {
-        return app.disks.filter((disk) => app.getCurrentTower(disk) === towerNum);
+        return app.disks.filter((disk) => +disk.style.getPropertyValue('--current-tower') === towerNum);
       },
 
       updateTower(towerNum) {
