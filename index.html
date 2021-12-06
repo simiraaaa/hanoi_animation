@@ -167,6 +167,16 @@
         }
         return diskPositions;
       },
+
+      /**
+       * @param {BigInt} seekNum
+       * */
+      seekTo(seekNum) {
+        const disks = app.disks;
+        app.getSeekPositions(seekNum).forEach((p, i) => {
+          app.setCurrentTower(disks[i], p);
+        });
+      },
     };
     $body.style.setProperty('--disk-count', app.diskCount);
     $disks.innerHTML = [...Array(app.diskCount)].map((v, i) => {
