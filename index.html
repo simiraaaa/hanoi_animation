@@ -108,11 +108,18 @@
         disk.style.setProperty('--current-tower', towerNum);
       },
 
+
       move(diskNum, towerNum) {
         const disk = app.getDisk(diskNum);
         // 強制的にアニメーションさせるハック
         disk.offsetWidth;
         return new Promise((resolve) => {
+          // requestAnimationFrame(() => {
+          //   disk.style.setProperty('--current-tower', towerNum);
+          //   app.updateTower(towerNum);
+          //   resolve();
+          // });
+          // return;
           disk.style.setProperty('--move-flag', '1');
           app.setCurrentTower(disk, towerNum);
           disk.addEventListener('transitionend', function f(e) {
