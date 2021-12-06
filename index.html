@@ -177,6 +177,26 @@
           app.setCurrentTower(disks[i], p);
         });
       },
+
+      // 現在の状態が何回移動したか取得
+      getSeekNum() {
+        const diskPositions = app.disks.map(app.getCurrentTower);
+
+        let seekNum = 0n;
+        let {from, work, to} = app;
+        
+        for (let i = diskPositions.length - 1; i >= 0; --i) {
+          if (diskPositions[i] !== from) {
+            const num2pow = 2n ** BigInt(i);
+            seekNum += num2pow;
+            // 基準座標を入れ替える
+            [from, work, to] = [work, to, from];
+          }
+          // work, to を入れ替える
+          [work, to] = [to, work];
+        }
+        return seekNum;
+      },
     };
     $body.style.setProperty('--disk-count', app.diskCount);
     $disks.innerHTML = [...Array(app.diskCount)].map((v, i) => {
