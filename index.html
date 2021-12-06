@@ -132,6 +132,41 @@
         return app.disks[diskNum];
       },
 
+      /**
+       * 0 → 2 に移動するときに seekNum 回移動した時点の disk の位置の配列を取得
+       * @param {BigInt} seekNum
+       * */
+      getSeekPositions(seekNum) {
+        if (app.MAX_SEEK_NUM < seekNum) {
+          seekNum = app.MAX_SEEK_NUM;
+        }
+        let {from, work, to} = app;
+        const TC = app.TOWER_COUNT;
+
+        // 全部 from の位置で配列を作る
+        const diskPositions = Array(app.diskCount).fill(from);
+
+        // n 未満の disk を移動する関数
+        const moveDisks = (n, plusNum) => {
+          for (let i = 0; i < n; ++i) {
+            diskPositions[i] = (diskPositions[i] + plusNum) % TC;
+          };
+        };
+        
+        for (let i = diskPositions.length - 1; i >= 0 && seekNum >= 0; --i) {
+          const num2pow = 2n ** BigInt(i);
+          if (seekNum >= num2pow) {
+            seekNum -= num2pow;
+            // i の disk を to へ移動
+            diskPositions[i] = (TC + diskPositions[i] + to - from) % TC;
+            // i 未満を work の位置へ移動する
+            moveDisks(i, TC + work - from);
+          }
+          // work, to を入れ替える
+          [work, to] = [to, work];
+        }
+        return diskPositions;
+      },
     };
     $body.style.setProperty('--disk-count', app.diskCount);
     $disks.innerHTML = [...Array(app.diskCount)].map((v, i) => {
