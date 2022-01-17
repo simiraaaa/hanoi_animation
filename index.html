@@ -69,17 +69,23 @@
     <div id="$disks"></div>
   </div>
   <script>
+    
     const app = {
       diskCount: 8,
+      TOWER_COUNT: 3,
+      from: 0,
+      work: 1,
+      to: 2,
+      MAX_SEEK_NUM: 2n ** 64n - 1n,
       get disks() {
         return [...$disks.children];
       },
       createDisk(num) {
-        return `<div class="disk" style="--num: ${num}; --current-tower: 0;">${num + 1}</div>`;  
+        return `<div class="disk" style="--num: ${num}; --current-tower: ${app.from};">${num + 1}</div>`;  
       },
 
       getTowerDisks(towerNum) {
-        return app.disks.filter((disk) => app.getCurrentTower(disk) === towerNum);
+        return app.disks.filter((disk) => +disk.style.getPropertyValue('--current-tower') === towerNum);
       },
 
       updateTower(towerNum) {
@@ -102,11 +108,18 @@
         disk.style.setProperty('--current-tower', towerNum);
       },
 
+
       move(diskNum, towerNum) {
         const disk = app.getDisk(diskNum);
         // 強制的にアニメーションさせるハック
         disk.offsetWidth;
         return new Promise((resolve) => {
+          // requestAnimationFrame(() => {
+          //   disk.style.setProperty('--current-tower', towerNum);
+          //   app.updateTower(towerNum);
+          //   resolve();
+          // });
+          // return;
           disk.style.setProperty('--move-flag', '1');
           app.setCurrentTower(disk, towerNum);
           disk.addEventListener('transitionend', function f(e) {
@@ -144,6 +157,71 @@
             }
           });
         }
+      },
+      /**
+       * 0 → 2 に移動するときに seekNum 回移動した時点の disk の位置の配列を取得
+       * @param {BigInt} seekNum
+       * */
+      getSeekPositions(seekNum) {
+        if (app.MAX_SEEK_NUM < seekNum) {
+          seekNum = app.MAX_SEEK_NUM;
+        }
+        let {from, work, to} = app;
+        const TC = app.TOWER_COUNT;
+
+        // 全部 from の位置で配列を作る
+        const diskPositions = Array(app.diskCount).fill(from);
+
+        // n 未満の disk を移動する関数
+        const moveDisks = (n, plusNum) => {
+          for (let i = 0; i < n; ++i) {
+            diskPositions[i] = (diskPositions[i] + plusNum) % TC;
+          };
+        };
+        
+        for (let i = diskPositions.length - 1; i >= 0 && seekNum >= 0; --i) {
+          const num2pow = 2n ** BigInt(i);
+          if (seekNum >= num2pow) {
+            seekNum -= num2pow;
+            // i の disk を to へ移動
+            diskPositions[i] = (TC + diskPositions[i] + to - from) % TC;
+            // i 未満を work の位置へ移動する
+            moveDisks(i, TC + work - from);
+          }
+          // work, to を入れ替える
+          [work, to] = [to, work];
+        }
+        return diskPositions;
+      },
+
+      /**
+       * @param {BigInt} seekNum
+       * */
+      seekTo(seekNum) {
+        const disks = app.disks;
+        app.getSeekPositions(seekNum).forEach((p, i) => {
+          app.setCurrentTower(disks[i], p);
+        });
+      },
+
+      // 現在の状態が何回移動したか取得
+      getSeekNum() {
+        const diskPositions = app.disks.map(app.getCurrentTower);
+
+        let seekNum = 0n;
+        let {from, work, to} = app;
+        
+        for (let i = diskPositions.length - 1; i >= 0; --i) {
+          if (diskPositions[i] !== from) {
+            const num2pow = 2n ** BigInt(i);
+            seekNum += num2pow;
+            // 基準座標を入れ替える
+            [from, work, to] = [work, to, from];
+          }
+          // work, to を入れ替える
+          [work, to] = [to, work];
+        }
+        return seekNum;
       },
     };
     $body.style.setProperty('--disk-count', app.diskCount);
