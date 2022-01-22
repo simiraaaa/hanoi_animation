@@ -235,6 +235,24 @@
       app.clickManager.count++;
       app.clickManager.resolve();
     };
+
+    __getData = () => {
+      return {
+        count: app.getSeekNum().toString(),
+      };
+    };
+
+    __setData = (json) => {
+      try {
+        // TODO: skip 対応
+        // if (json.count.length > 20) throw Error('invalid count');
+        // app.seekTo(BigInt(json.count));
+        app.update();
+      }
+      catch(e) {
+        console.error(e);
+      }
+    };
     function *hanoi(disk, from, work, to) {
       if (disk < 1) return;
       yield* hanoi(disk - 1, from, to, work);
